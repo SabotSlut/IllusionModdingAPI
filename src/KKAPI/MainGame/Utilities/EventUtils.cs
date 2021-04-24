@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ActionGame.Chara;
 using ADV;
+using BepInEx;
 using HarmonyLib;
 using KKAPI.Utilities;
 using Manager;
@@ -28,6 +29,9 @@ namespace KKAPI.MainGame
     /// </summary>
     public static class EventUtils
     {
+        internal static readonly Dictionary<Command, CustomCommand> InjectedCommands = new Dictionary<Command, CustomCommand>();
+        private static int _nextFreeCommandID = Enum.GetValues(typeof(Command)).Cast<Command>().Select(value => (int)value).Max() + 1;
+
         /// <summary>
         /// Get current save data of the player
         /// </summary>
@@ -271,6 +275,45 @@ namespace KKAPI.MainGame
                 actScene.Player.isPopOK = true;
                 actScene.Player.SetActive(true);
             }
+        }
+
+        /// <summary>
+        /// Register a new ADV scripting command. The name of the command will be inferred based on the type's name.
+        /// </summary>
+        /// <typeparam name="T">The type of the command.</typeparam>
+        /// <returns>The Command ID of the custom command.</returns>
+        public static Command RegisterCustomCommand<T>(BaseUnityPlugin owner) where T : CommandBase
+        {
+            KeyValuePair<Command, CustomCommand> first = new KeyValuePair<Command, CustomCommand>();
+            foreach (var pair in InjectedCommands)
+            {
+                if (pair.Value.Type == typeof(T))
+                {
+                    KoikatuAPI.Logger.LogWarning($"Attempted to inject command {typeof(T).FullName} again.");
+                    return pair.Value.ID;
+                }
+            }
+
+            Command newCommand = (Command)_nextFreeCommandID;
+            InjectedCommands[newCommand] = new CustomCommand(newCommand, typeof(T), owner);
+            KoikatuAPI.Logger.LogDebug($"Injected command {typeof(T).FullName} with ID {newCommand}.");
+            _nextFreeCommandID++;
+            return newCommand;
+        }
+
+        /// <summary>
+        /// Returns a list of all currently-registered custom commands.
+        /// </summary>
+        /// <returns>A list of custom commands.</returns>
+        public static List<CustomCommand> GetAllCustomCommands()
+        {
+            List<CustomCommand> customCommands = new List<CustomCommand>();
+            foreach (var command in InjectedCommands)
+            {
+                customCommands.Add(command.Value);
+            }
+
+            return customCommands;
         }
     }
 }

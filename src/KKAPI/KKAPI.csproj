@@ -81,6 +81,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommandData.cs" />
     <Compile Include="MainGame\ActionIcons\CustomActionIcon.cs" />
     <Compile Include="MainGame\TouchIcons\CustomTalkSceneTouchIcon.cs" />
     <Compile Include="MainGame\Utilities\EventUtils.cs" />
